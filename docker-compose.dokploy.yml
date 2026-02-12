@@ -1,0 +1,80 @@
+services:
+  openclaw-gateway:
+    # Construye la imagen igual que el docker-setup.sh (Dockerfile + build-arg)
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        OPENCLAW_DOCKER_APT_PACKAGES: ${OPENCLAW_DOCKER_APT_PACKAGES:-}
+    image: ${OPENCLAW_IMAGE:-openclaw:local}
+
+    environment:
+      HOME: /home/node
+      TERM: xterm-256color
+
+      # Auth/token del gateway (en el .sh se autogenera si falta; acá lo seteás vos)
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
+
+      # Si usás Claude (opcionales)
+      CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY:-}
+      CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY:-}
+      CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE:-}
+
+    # Volúmenes aislados (recomendado para Dokploy)
+    volumes:
+      - openclaw_config:/home/node/.openclaw
+      - openclaw_workspace:/home/node/.openclaw/workspace
+
+      # Si necesitás montar cosas del host, agregalas acá (ejemplos):
+      # - /var/run/docker.sock:/var/run/docker.sock
+      # - ./data:/data
+
+    ports:
+      - "${OPENCLAW_GATEWAY_PORT:-18789}:18789"
+      - "${OPENCLAW_BRIDGE_PORT:-18790}:18790"
+
+    init: true
+    restart: unless-stopped
+
+    command:
+      [
+        "node",
+        "dist/index.js",
+        "gateway",
+        "--bind",
+        "${OPENCLAW_GATEWAY_BIND:-lan}",
+        "--port",
+        "18789"
+      ]
+
+  openclaw-cli:
+    image: ${OPENCLAW_IMAGE:-openclaw:local}
+    depends_on:
+      - openclaw-gateway
+
+    environment:
+      HOME: /home/node
+      TERM: xterm-256color
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
+      BROWSER: echo
+
+      CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY:-}
+      CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY:-}
+      CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE:-}
+
+    volumes:
+      - openclaw_config:/home/node/.openclaw
+      - openclaw_workspace:/home/node/.openclaw/workspace
+
+      # mismos mounts opcionales que en gateway (si aplican)
+      # - /var/run/docker.sock:/var/run/docker.sock
+      # - ./data:/data
+
+    stdin_open: true
+    tty: true
+    init: true
+    entrypoint: ["node", "dist/index.js"]
+
+volumes:
+  openclaw_config:
+  openclaw_workspace:
