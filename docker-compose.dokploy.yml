@@ -1,33 +1,23 @@
 services:
   openclaw-gateway:
-    # Construye la imagen igual que el docker-setup.sh (Dockerfile + build-arg)
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        OPENCLAW_DOCKER_APT_PACKAGES: ${OPENCLAW_DOCKER_APT_PACKAGES:-}
     image: ${OPENCLAW_IMAGE:-openclaw:local}
 
     environment:
       HOME: /home/node
       TERM: xterm-256color
 
-      # Auth/token del gateway (en el .sh se autogenera si falta; acá lo seteás vos)
-      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
+      # REQUIRED (set in Dokploy env vars)
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-}
 
-      # Si usás Claude (opcionales)
+      # Optional (only if you use Claude)
       CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY:-}
       CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY:-}
       CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE:-}
 
-    # Volúmenes aislados (recomendado para Dokploy)
+    # Dokploy-safe persistence (no host mounts required)
     volumes:
       - openclaw_config:/home/node/.openclaw
       - openclaw_workspace:/home/node/.openclaw/workspace
-
-      # Si necesitás montar cosas del host, agregalas acá (ejemplos):
-      # - /var/run/docker.sock:/var/run/docker.sock
-      # - ./data:/data
 
     ports:
       - "${OPENCLAW_GATEWAY_PORT:-18789}:18789"
@@ -38,8 +28,7 @@ services:
 
     command:
       [
-        "node",
-        "dist/index.js",
+        "openclaw",
         "gateway",
         "--bind",
         "${OPENCLAW_GATEWAY_BIND:-lan}",
@@ -55,7 +44,7 @@ services:
     environment:
       HOME: /home/node
       TERM: xterm-256color
-      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-}
       BROWSER: echo
 
       CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY:-}
@@ -66,15 +55,15 @@ services:
       - openclaw_config:/home/node/.openclaw
       - openclaw_workspace:/home/node/.openclaw/workspace
 
-      # mismos mounts opcionales que en gateway (si aplican)
-      # - /var/run/docker.sock:/var/run/docker.sock
-      # - ./data:/data
-
     stdin_open: true
     tty: true
     init: true
-    entrypoint: ["node", "dist/index.js"]
+
+    # Keep CLI available for exec/run in Dokploy (it will idle showing help unless you exec a command)
+    entrypoint: ["openclaw"]
+    command: ["help"]
 
 volumes:
   openclaw_config:
   openclaw_workspace:
+
