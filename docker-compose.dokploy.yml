@@ -54,10 +54,15 @@ services:
 
     init: true
     restart: unless-stopped
-
-    entrypoint: ["node", "dist/index.js"]
-    command:
-      ["gateway","--allow-unconfigured","--bind","${OPENCLAW_GATEWAY_BIND:-lan}","--port","18789"]
+    
+    user: "0:0"
+    entrypoint: ["/bin/sh","-lc"]
+    command: >
+      set -e;
+      mkdir -p /home/node/.openclaw /home/node/.openclaw/workspace;
+      chown -R node:node /home/node/.openclaw;
+      chmod -R u+rwX,go-rwx /home/node/.openclaw;
+      exec su node -s /bin/sh -c 'cd /app && node dist/index.js gateway --allow-unconfigured --bind "${OPENCLAW_GATEWAY_BIND:-lan}" --port 18789';
 
   openclaw-cli:
     image: ${OPENCLAW_IMAGE:-openclaw:local}
