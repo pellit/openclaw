@@ -56,7 +56,8 @@ services:
     restart: unless-stopped
 
     entrypoint: ["node", "dist/index.js"]
-    command: ["gateway", "--bind", "${OPENCLAW_GATEWAY_BIND:-lan}", "--port", "18789"]
+    command:
+      ["gateway","--allow-unconfigured","--bind","${OPENCLAW_GATEWAY_BIND:-lan}","--port","18789"]
 
   openclaw-cli:
     image: ${OPENCLAW_IMAGE:-openclaw:local}
