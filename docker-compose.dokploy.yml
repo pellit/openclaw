@@ -32,8 +32,8 @@ services:
         OPENCLAW_DOCKER_APT_PACKAGES: ${OPENCLAW_DOCKER_APT_PACKAGES:-}
     image: ${OPENCLAW_IMAGE:-openclaw:local}
 
-  depends_on:
-    - openclaw-init
+    depends_on:
+      - openclaw-init
 
     environment:
       HOME: /home/node
