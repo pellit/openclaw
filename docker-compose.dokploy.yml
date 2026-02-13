@@ -53,7 +53,7 @@ services:
       - "${OPENCLAW_BRIDGE_PORT:-18790}:18790"
 
     init: true
-    restart:"no"
+    restart: "no"
     
     user: "0:0"
     entrypoint: ["/bin/sh","-lc"]
