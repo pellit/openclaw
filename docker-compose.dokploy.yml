@@ -1,37 +1,28 @@
 services:
   openclaw-init:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        OPENCLAW_DOCKER_APT_PACKAGES: ${OPENCLAW_DOCKER_APT_PACKAGES:-}
     image: ${OPENCLAW_IMAGE:-openclaw:local}
-
+    volumes:
+      - openclaw_config:/home/node/.openclaw
+      - openclaw_workspace:/home/node/.openclaw/workspace
     environment:
       HOME: /home/node
       TERM: xterm-256color
       OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-}
-
       CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY:-}
       CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY:-}
       CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE:-}
-
-    volumes:
-      - openclaw_config:/home/node/.openclaw
-      - openclaw_workspace:/home/node/.openclaw/workspace
-
-    # Ejecuta setup y termina OK
     restart: "no"
-    entrypoint: ["sh", "-lc"]
+    entrypoint: ["/bin/sh","-lc"]
     command: >
-      set -e;
-      if [ -f /home/node/.openclaw/openclaw.json ] || [ -f /home/node/.openclaw/config.json ]; then
-        echo "[openclaw-init] config already exists, skipping";
-      else
-        echo "[openclaw-init] running setup...";
-        node dist/index.js setup --allow-unconfigured || node dist/index.js setup || true;
-        echo "[openclaw-init] done";
-      fi
+      echo "[openclaw-init] boot";
+      ls -la /home/node/.openclaw || true;
+      if [ -f /home/node/.openclaw/openclaw.json ]; then
+        echo "[openclaw-init] openclaw.json exists, skipping";
+        exit 0;
+      fi;
+      echo "[openclaw-init] running setup...";
+      node dist/index.js setup;
+      echo "[openclaw-init] done";
 
   openclaw-gateway:
     build:
@@ -41,9 +32,8 @@ services:
         OPENCLAW_DOCKER_APT_PACKAGES: ${OPENCLAW_DOCKER_APT_PACKAGES:-}
     image: ${OPENCLAW_IMAGE:-openclaw:local}
 
-    depends_on:
-      openclaw-init:
-        condition: service_completed_successfully
+  depends_on:
+    - openclaw-init
 
     environment:
       HOME: /home/node
